@@ -89,11 +89,13 @@ st.markdown("""
 <div class="main-header">
     <div class="welcome-title">🧠 BCI Motor Imagery Classifier</div>
     <div class="welcome-subtitle">
-        Welcome! This interactive application demonstrates a Brain-Computer Interface (BCI) 
-        system that can classify motor imagery tasks from EEG signals. Using advanced signal 
-        processing and machine learning techniques, the system distinguishes between left hand 
-        and right hand motor imagery—a key capability for assistive technologies and 
-        neurorehabilitation applications.
+        <strong>What is this?</strong> Imagine you're thinking about moving your left hand, but you don't actually move it. 
+        Your brain still sends signals to your muscles—we can detect these signals using sensors on your head (EEG). 
+        This app uses artificial intelligence to "read your mind" and figure out whether you're thinking about moving 
+        your left hand or right hand, just by looking at your brain signals!
+        <br><br>
+        <strong>Why does this matter?</strong> This technology helps people who can't move their bodies control computers, 
+        wheelchairs, or robotic arms using only their thoughts. It's like having a direct connection between your brain and a computer.
     </div>
     <div class="creator-credit">
         Created by <strong>Trent Barker</strong>
@@ -104,16 +106,21 @@ st.markdown("""
 # Information box
 st.markdown("""
 <div class="info-box">
-    <h4>📖 How It Works</h4>
+    <h4>📖 How It Works (Simple Version)</h4>
     <p>
-        <strong>Common Spatial Patterns (CSP)</strong> extracts discriminative spatial features from 
-        multi-channel EEG signals by finding optimal linear combinations of channels that maximize 
-        variance differences between left and right hand imagery.
+        <strong>Step 1: Reading Brain Signals</strong> - We place sensors on your head that measure tiny electrical signals 
+        from your brain. When you think about moving your left hand, different parts of your brain become active compared 
+        to when you think about moving your right hand.
+    </p>
+    <p>
+        <strong>Step 2: Finding Patterns</strong> - The computer looks at signals from all the sensors and finds patterns that 
+        are different between "left hand thinking" and "right hand thinking." It's like learning to recognize the difference 
+        between two songs by listening to them many times.
     </p>
     <p style="margin-bottom: 0;">
-        <strong>Linear Discriminant Analysis (LDA)</strong> then classifies these features, providing 
-        real-time predictions of motor imagery intent. This classic BCI pipeline achieves robust 
-        performance and is widely used in research and clinical applications.
+        <strong>Step 3: Making a Guess</strong> - When you think about moving a hand, the computer looks at the patterns it learned 
+        and makes its best guess: "This looks like left hand thinking" or "This looks like right hand thinking." The more confident 
+        it is, the higher the percentage you'll see.
     </p>
 </div>
 """, unsafe_allow_html=True)
@@ -509,8 +516,8 @@ def plot_topomap_trial(trial_data, info, times=None):
 # Streamlit UI
 # ============================================================================
 
-st.markdown("### 🎯 Test the Classifier")
-st.markdown("Load a trial to see the model's prediction:")
+st.markdown("### 🎯 Try It Out!")
+st.markdown("**What to do:** Click a button below to load a real brain signal recording. The computer will try to guess whether the person was thinking about moving their left hand or right hand. See if it gets it right!")
 
 # Initialize session state
 if 'trial_data' not in st.session_state:
@@ -611,28 +618,36 @@ if st.session_state.trial_data is not None:
     result_col1, result_col2 = st.columns(2)
     
     with result_col1:
-        st.markdown("### 📊 Model Prediction")
+        st.markdown("### 🤖 Computer's Guess")
         prediction_color = "🟢" if st.session_state.prediction == st.session_state.true_label else "🔴"
-        st.markdown(f"**{prediction_color} Model predicted:** `{st.session_state.prediction}`")
+        st.markdown(f"**{prediction_color} The computer thinks:** `{st.session_state.prediction}`")
         
         # Show prediction confidence
         if hasattr(st.session_state, 'proba'):
             confidence = max(st.session_state.proba) * 100
-            st.metric("Confidence", f"{confidence:.1f}%")
+            st.metric("How Sure?", f"{confidence:.1f}%")
+            if confidence > 80:
+                st.caption("Very confident! 🎯")
+            elif confidence > 60:
+                st.caption("Pretty sure 👍")
+            else:
+                st.caption("Not very sure 🤔")
     
     with result_col2:
-        st.markdown("### ✅ Ground Truth")
-        st.markdown(f"**Ground truth was:** `{st.session_state.true_label}`")
+        st.markdown("### 📝 What Actually Happened")
+        st.markdown(f"**The person was thinking about:** `{st.session_state.true_label}`")
         
         # Show if prediction is correct
         is_correct = st.session_state.prediction == st.session_state.true_label
-        status = "✅ Correct!" if is_correct else "❌ Incorrect"
-        st.markdown(f"**Status:** {status}")
+        if is_correct:
+            st.success("🎉 The computer got it right!")
+        else:
+            st.error("❌ The computer guessed wrong this time")
     
     # Display visualization
     st.markdown("---")
-    st.markdown("### 🗺️ EEG Topography Map")
-    st.markdown("Spatial distribution of EEG power during the motor imagery period:")
+    st.markdown("### 🗺️ Brain Activity Map")
+    st.markdown("**What you're seeing:** This map shows which parts of the brain were most active when the person was thinking about moving their hand. Red areas = more active, Blue areas = less active. The computer uses patterns like this to make its guess!")
     
     # Get info from test epochs
     info = test_epochs.info
@@ -655,26 +670,31 @@ if st.session_state.trial_data is not None:
 
 # Footer
 st.markdown("---")
-st.markdown("### ℹ️ About")
-st.markdown("""
-This application demonstrates a BCI Motor Imagery Classifier using:
-- **CSP (Common Spatial Patterns)** for feature extraction
-- **LDA (Linear Discriminant Analysis)** for classification
-
-The classifier distinguishes between left hand and right hand motor imagery based on EEG signals.
-""")
+st.markdown("### ℹ️ Technical Details")
+with st.expander("Click to see technical information"):
+    st.markdown("""
+    This application uses:
+    - **CSP (Common Spatial Patterns)** - Finds the best way to combine signals from different brain sensors
+    - **LDA (Linear Discriminant Analysis)** - Makes the final decision about left vs. right
+    
+    The data comes from the BCI Competition IV Dataset 2a, which contains real EEG recordings from people 
+    performing motor imagery tasks.
+    """)
 
 # Instructions
 with st.sidebar:
-    st.markdown("### 📋 Instructions")
+    st.markdown("### 📋 Quick Guide")
     st.markdown("""
-    1. Click **"Load random 'LEFT' trial"** or **"Load random 'RIGHT' trial"** for a random trial
-    2. Or enter a trial number and click **"Load Trial"** to load a specific trial
-    3. View the model's prediction and trial number
-    4. Compare with the ground truth label
-    5. Examine the EEG topography map
+    **How to use:**
+    1. Click a button to load a brain signal recording
+    2. See what the computer guessed
+    3. Check if it was right!
+    4. Look at the brain activity map to see what the computer "saw"
     
-    **Note:** Make sure you've trained the models first by running `2_train_model.py`
+    **Tips:**
+    - Try loading multiple trials to see how accurate the computer is
+    - Higher "How Sure?" percentage = computer is more confident
+    - Green circle = correct guess, Red circle = wrong guess
     """)
     
     st.markdown("### 🔧 Model Information")
