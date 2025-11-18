@@ -63,11 +63,23 @@ st.markdown("""
         border-top: 1px solid rgba(255, 255, 255, 0.2);
     }
     .info-box {
-        background-color: #f0f2f6;
+        background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
         padding: 1.5rem;
         border-radius: 8px;
         border-left: 4px solid #667eea;
         margin: 1rem 0;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+    }
+    .info-box h4 {
+        color: #a78bfa !important;
+        margin-top: 0;
+    }
+    .info-box p {
+        color: #e2e8f0 !important;
+        margin-bottom: 0.5rem;
+    }
+    .info-box strong {
+        color: #cbd5e0 !important;
     }
 </style>
 """, unsafe_allow_html=True)
@@ -92,8 +104,8 @@ st.markdown("""
 # Information box
 st.markdown("""
 <div class="info-box">
-    <h4 style="margin-top: 0; color: #667eea;">📖 How It Works</h4>
-    <p style="margin-bottom: 0.5rem;">
+    <h4>📖 How It Works</h4>
+    <p>
         <strong>Common Spatial Patterns (CSP)</strong> extracts discriminative spatial features from 
         multi-channel EEG signals by finding optimal linear combinations of channels that maximize 
         variance differences between left and right hand imagery.
