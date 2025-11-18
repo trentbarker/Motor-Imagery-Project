@@ -22,11 +22,90 @@ mne.set_log_level('WARNING')
 st.set_page_config(
     page_title="BCI Motor Imagery Classifier",
     page_icon="🧠",
-    layout="wide"
+    layout="wide",
+    initial_sidebar_state="expanded"
 )
 
-# Title
-st.title("🧠 BCI Motor Imagery Classifier")
+# ============================================================================
+# Header Section - Welcome and Attribution
+# ============================================================================
+
+# Custom CSS for professional styling
+st.markdown("""
+<style>
+    .main-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        padding: 2rem;
+        border-radius: 10px;
+        margin-bottom: 2rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    .welcome-title {
+        color: white;
+        font-size: 2.5rem;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        text-align: center;
+    }
+    .welcome-subtitle {
+        color: rgba(255, 255, 255, 0.95);
+        font-size: 1.2rem;
+        text-align: center;
+        margin-bottom: 1rem;
+        line-height: 1.6;
+    }
+    .creator-credit {
+        color: rgba(255, 255, 255, 0.9);
+        font-size: 0.95rem;
+        text-align: center;
+        margin-top: 1rem;
+        padding-top: 1rem;
+        border-top: 1px solid rgba(255, 255, 255, 0.2);
+    }
+    .info-box {
+        background-color: #f0f2f6;
+        padding: 1.5rem;
+        border-radius: 8px;
+        border-left: 4px solid #667eea;
+        margin: 1rem 0;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+# Header with gradient background
+st.markdown("""
+<div class="main-header">
+    <div class="welcome-title">🧠 BCI Motor Imagery Classifier</div>
+    <div class="welcome-subtitle">
+        Welcome! This interactive application demonstrates a Brain-Computer Interface (BCI) 
+        system that can classify motor imagery tasks from EEG signals. Using advanced signal 
+        processing and machine learning techniques, the system distinguishes between left hand 
+        and right hand motor imagery—a key capability for assistive technologies and 
+        neurorehabilitation applications.
+    </div>
+    <div class="creator-credit">
+        Created by <strong>Trent Barker</strong>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
+# Information box
+st.markdown("""
+<div class="info-box">
+    <h4 style="margin-top: 0; color: #667eea;">📖 How It Works</h4>
+    <p style="margin-bottom: 0.5rem;">
+        <strong>Common Spatial Patterns (CSP)</strong> extracts discriminative spatial features from 
+        multi-channel EEG signals by finding optimal linear combinations of channels that maximize 
+        variance differences between left and right hand imagery.
+    </p>
+    <p style="margin-bottom: 0;">
+        <strong>Linear Discriminant Analysis (LDA)</strong> then classifies these features, providing 
+        real-time predictions of motor imagery intent. This classic BCI pipeline achieves robust 
+        performance and is widely used in research and clinical applications.
+    </p>
+</div>
+""", unsafe_allow_html=True)
+
 st.markdown("---")
 
 # ============================================================================
