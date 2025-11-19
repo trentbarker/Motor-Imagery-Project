@@ -22,41 +22,41 @@ mne.set_log_level('WARNING')
 st.set_page_config(
     page_title="BCI Motor Imagery Classifier",
     page_icon="🧠",
-    layout="wide",
-    initial_sidebar_state="expanded"
+    layout="centered",  # Better for mobile
+    initial_sidebar_state="collapsed"  # Collapsed by default for mobile
 )
 
 # ============================================================================
 # Header Section - Welcome and Attribution
 # ============================================================================
 
-# Custom CSS for professional styling
+# Custom CSS for professional styling and mobile responsiveness
 st.markdown("""
 <style>
     .main-header {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 2rem;
+        padding: 1.5rem;
         border-radius: 10px;
         margin-bottom: 2rem;
         box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
     .welcome-title {
         color: white;
-        font-size: 2.5rem;
+        font-size: 2rem;
         font-weight: 700;
         margin-bottom: 0.5rem;
         text-align: center;
     }
     .welcome-subtitle {
         color: rgba(255, 255, 255, 0.95);
-        font-size: 1.2rem;
+        font-size: 1rem;
         text-align: center;
         margin-bottom: 1rem;
         line-height: 1.6;
     }
     .creator-credit {
         color: rgba(255, 255, 255, 0.9);
-        font-size: 0.95rem;
+        font-size: 0.9rem;
         text-align: center;
         margin-top: 1rem;
         padding-top: 1rem;
@@ -64,7 +64,7 @@ st.markdown("""
     }
     .info-box {
         background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
-        padding: 1.5rem;
+        padding: 1.2rem;
         border-radius: 8px;
         border-left: 4px solid #667eea;
         margin: 1rem 0;
@@ -73,13 +73,51 @@ st.markdown("""
     .info-box h4 {
         color: #a78bfa !important;
         margin-top: 0;
+        font-size: 1.1rem;
     }
     .info-box p {
         color: #e2e8f0 !important;
         margin-bottom: 0.5rem;
+        font-size: 0.95rem;
     }
     .info-box strong {
         color: #cbd5e0 !important;
+    }
+    
+    /* Mobile responsiveness */
+    @media (max-width: 768px) {
+        .welcome-title {
+            font-size: 1.5rem;
+        }
+        .welcome-subtitle {
+            font-size: 0.9rem;
+        }
+        .main-header {
+            padding: 1rem;
+        }
+        .info-box {
+            padding: 1rem;
+        }
+        .info-box h4 {
+            font-size: 1rem;
+        }
+        .info-box p {
+            font-size: 0.85rem;
+        }
+    }
+    
+    /* Make buttons and text more readable on mobile */
+    .stButton > button {
+        width: 100%;
+        font-size: 1.1rem;
+        padding: 0.75rem;
+    }
+    
+    /* Improve spacing on mobile */
+    @media (max-width: 768px) {
+        .element-container {
+            margin-bottom: 1rem;
+        }
     }
 </style>
 """, unsafe_allow_html=True)
@@ -335,14 +373,12 @@ def get_trial_by_index(epoch_idx, epochs):
     
     return trial_data, true_label, trial_number
 
-def get_random_trial(class_type, epochs, seed=None):
+def get_random_trial_any(epochs, seed=None):
     """
-    Get a random trial of the specified class.
+    Get a random trial from any class (left or right).
     
     Parameters:
     -----------
-    class_type : str
-        'left' or 'right' to specify which class
     epochs : mne.Epochs
         Epochs object containing the test data
     seed : int, optional
@@ -353,7 +389,7 @@ def get_random_trial(class_type, epochs, seed=None):
     trial_data : ndarray
         Single trial data (n_channels, n_times)
     true_label : str
-        Ground truth label
+        Ground truth label ("LEFT" or "RIGHT")
     trial_number : int
         Trial number (1-indexed for display)
     epoch_idx : int
@@ -375,14 +411,11 @@ def get_random_trial(class_type, epochs, seed=None):
             st.warning("Could not determine left/right event codes")
             return None, None, None, None
     
-    # Select the appropriate event code based on class_type
-    target_code = left_code if class_type.lower() == 'left' else right_code
+    # Get all valid trial indices (both left and right)
+    valid_indices = np.where(np.isin(epochs.events[:, 2], [left_code, right_code]))[0]
     
-    # Get indices of trials with the specified label
-    trial_indices = np.where(epochs.events[:, 2] == target_code)[0]
-    
-    if len(trial_indices) == 0:
-        st.warning(f"No trials found for {class_type} hand")
+    if len(valid_indices) == 0:
+        st.warning("No valid trials found")
         return None, None, None, None
     
     # Use seed if provided, otherwise use current time for true randomness
@@ -391,14 +424,15 @@ def get_random_trial(class_type, epochs, seed=None):
     else:
         np.random.seed(seed)
     
-    # Select a random trial
-    random_epoch_idx = np.random.choice(trial_indices)
+    # Select a random trial from all valid trials
+    random_epoch_idx = np.random.choice(valid_indices)
     
     # Get the trial data (n_channels, n_times)
     trial_data = epochs[random_epoch_idx].get_data()[0]  # [0] to remove epoch dimension
     
-    # Get true label
-    true_label = "LEFT" if class_type.lower() == 'left' else "RIGHT"
+    # Get true label based on event code
+    event_code = epochs.events[random_epoch_idx, 2]
+    true_label = "LEFT" if event_code == left_code else "RIGHT"
     
     trial_number = random_epoch_idx + 1  # 1-indexed for display
     
@@ -517,7 +551,6 @@ def plot_topomap_trial(trial_data, info, times=None):
 # ============================================================================
 
 st.markdown("### 🎯 Try It Out!")
-st.markdown("**What to do:** Click a button below to load a real brain signal recording. The computer will try to guess whether the person was thinking about moving their left hand or right hand. See if it gets it right!")
 
 # Initialize session state
 if 'trial_data' not in st.session_state:
@@ -527,74 +560,26 @@ if 'trial_data' not in st.session_state:
     st.session_state.trial_number = None
     st.session_state.total_trials = len(test_epochs)
 
-# Display total number of trials
-st.info(f"📊 Total trials available: {st.session_state.total_trials}")
+# Single button for loading random trial
+st.markdown("**Click the button below to test the model:**")
+load_button = st.button("🎲 Load Random Brain Signal", 
+                        use_container_width=True, 
+                        type="primary",
+                        key="load_random")
 
-# Create columns for buttons and trial number input
-col1, col2, col3 = st.columns([2, 2, 2])
+# Explanation of what happens when button is clicked
+st.markdown("""
+**What happens when you click:**
+1. A random brain signal recording is loaded (from a person thinking about moving their left or right hand)
+2. The computer analyzes the signal and makes a guess
+3. You'll see the computer's guess, how confident it is, and whether it was correct
+""")
 
-with col1:
-    load_left_button = st.button("🫲 Load random 'LEFT' trial", 
-                                 use_container_width=True, 
-                                 type="primary",
-                                 key="load_left")
-
-with col2:
-    load_right_button = st.button("🫱 Load random 'RIGHT' trial", 
-                                  use_container_width=True, 
-                                  type="primary",
-                                  key="load_right")
-
-with col3:
-    st.markdown("**Or load by trial number:**")
-    trial_number_input = st.number_input(
-        "Trial #",
-        min_value=1,
-        max_value=st.session_state.total_trials,
-        value=1,
-        step=1,
-        key="trial_number_input"
-    )
-    load_specific_button = st.button("📌 Load Trial", 
-                                     use_container_width=True,
-                                     key="load_specific")
-
-# Handle button clicks
-if load_left_button:
+# Handle button click
+if load_button:
     # Use current time as seed to ensure different trials on each click
     seed = int(time.time() * 1000) % 1000000
-    trial_data, true_label, trial_number, epoch_idx = get_random_trial('left', test_epochs, seed=seed)
-    if trial_data is not None:
-        st.session_state.trial_data = trial_data
-        st.session_state.true_label = true_label
-        st.session_state.trial_number = trial_number
-        st.session_state.epoch_idx = epoch_idx
-        # Get prediction
-        prediction, csp_features, proba = predict_trial(trial_data, csp, lda)
-        st.session_state.prediction = prediction
-        st.session_state.csp_features = csp_features
-        st.session_state.proba = proba
-        st.rerun()  # Force rerun to show new trial
-
-if load_right_button:
-    # Use current time as seed to ensure different trials on each click
-    seed = int(time.time() * 1000) % 1000000
-    trial_data, true_label, trial_number, epoch_idx = get_random_trial('right', test_epochs, seed=seed)
-    if trial_data is not None:
-        st.session_state.trial_data = trial_data
-        st.session_state.true_label = true_label
-        st.session_state.trial_number = trial_number
-        st.session_state.epoch_idx = epoch_idx
-        # Get prediction
-        prediction, csp_features, proba = predict_trial(trial_data, csp, lda)
-        st.session_state.prediction = prediction
-        st.session_state.csp_features = csp_features
-        st.session_state.proba = proba
-        st.rerun()  # Force rerun to show new trial
-
-if load_specific_button:
-    epoch_idx = trial_number_input - 1  # Convert to 0-indexed
-    trial_data, true_label, trial_number = get_trial_by_index(epoch_idx, test_epochs)
+    trial_data, true_label, trial_number, epoch_idx = get_random_trial_any(test_epochs, seed=seed)
     if trial_data is not None:
         st.session_state.trial_data = trial_data
         st.session_state.true_label = true_label
@@ -611,43 +596,40 @@ if load_specific_button:
 if st.session_state.trial_data is not None:
     st.markdown("---")
     
-    # Display trial number prominently
-    st.markdown(f"### 🔢 Trial #{st.session_state.trial_number} of {st.session_state.total_trials}")
+    # Results section with clear explanations
+    st.markdown("### 📊 Results")
     
-    # Create columns for results
-    result_col1, result_col2 = st.columns(2)
+    # Computer's prediction
+    st.markdown("#### 🤖 Computer's Guess")
+    prediction_color = "🟢" if st.session_state.prediction == st.session_state.true_label else "🔴"
+    st.markdown(f"**{prediction_color} Prediction:** `{st.session_state.prediction}`")
+    st.caption("This is what the computer thinks the person was imagining.")
     
-    with result_col1:
-        st.markdown("### 🤖 Computer's Guess")
-        prediction_color = "🟢" if st.session_state.prediction == st.session_state.true_label else "🔴"
-        st.markdown(f"**{prediction_color} The computer thinks:** `{st.session_state.prediction}`")
-        
-        # Show prediction confidence
-        if hasattr(st.session_state, 'proba'):
-            confidence = max(st.session_state.proba) * 100
-            st.metric("How Sure?", f"{confidence:.1f}%")
-            if confidence > 80:
-                st.caption("Very confident! 🎯")
-            elif confidence > 60:
-                st.caption("Pretty sure 👍")
-            else:
-                st.caption("Not very sure 🤔")
+    # Confidence
+    if hasattr(st.session_state, 'proba'):
+        confidence = max(st.session_state.proba) * 100
+        st.metric("Confidence Level", f"{confidence:.1f}%")
+        st.caption("How sure the computer is about its guess. Higher = more confident.")
     
-    with result_col2:
-        st.markdown("### 📝 What Actually Happened")
-        st.markdown(f"**The person was thinking about:** `{st.session_state.true_label}`")
-        
-        # Show if prediction is correct
-        is_correct = st.session_state.prediction == st.session_state.true_label
-        if is_correct:
-            st.success("🎉 The computer got it right!")
-        else:
-            st.error("❌ The computer guessed wrong this time")
+    st.markdown("---")
+    
+    # Ground truth
+    st.markdown("#### 📝 What Actually Happened")
+    st.markdown(f"**The person was thinking about:** `{st.session_state.true_label}`")
+    st.caption("This is what the person was actually imagining (the correct answer).")
+    
+    # Show if prediction is correct
+    is_correct = st.session_state.prediction == st.session_state.true_label
+    if is_correct:
+        st.success("✅ **Correct!** The computer guessed right.")
+    else:
+        st.error("❌ **Wrong.** The computer guessed incorrectly this time.")
+    
+    st.markdown("---")
     
     # Display visualization
-    st.markdown("---")
-    st.markdown("### 🗺️ Brain Activity Map")
-    st.markdown("**What you're seeing:** This map shows which parts of the brain were most active when the person was thinking about moving their hand. Red areas = more active, Blue areas = less active. The computer uses patterns like this to make its guess!")
+    st.markdown("#### 🗺️ Brain Activity Map")
+    st.markdown("**What this shows:** This map displays which parts of the brain were most active during the thought. Red = more active, Blue = less active. The computer uses these patterns to make its guess.")
     
     # Get info from test epochs
     info = test_epochs.info
@@ -656,17 +638,10 @@ if st.session_state.trial_data is not None:
     fig = plot_topomap_trial(st.session_state.trial_data, info)
     st.pyplot(fig)
     
-    # Additional information
-    with st.expander("📈 Additional Information"):
-        st.markdown(f"**Trial Number:** {st.session_state.trial_number} (epoch index: {st.session_state.epoch_idx})")
-        st.markdown(f"**Trial Shape:** {st.session_state.trial_data.shape}")
-        st.markdown(f"**Number of Channels:** {st.session_state.trial_data.shape[0]}")
-        st.markdown(f"**Number of Time Points:** {st.session_state.trial_data.shape[1]}")
-        st.markdown(f"**Sampling Rate:** {info['sfreq']} Hz")
-        
-        if hasattr(st.session_state, 'csp_features'):
-            st.markdown(f"**CSP Features Shape:** {st.session_state.csp_features.shape}")
-            st.markdown(f"**CSP Features:** {st.session_state.csp_features[0]}")
+    st.markdown("---")
+    
+    # Trial info
+    st.caption(f"Trial #{st.session_state.trial_number} of {st.session_state.total_trials}")
 
 # Footer
 st.markdown("---")
@@ -681,24 +656,17 @@ with st.expander("Click to see technical information"):
     performing motor imagery tasks.
     """)
 
-# Instructions
+# Instructions in sidebar (optional, can be collapsed on mobile)
 with st.sidebar:
-    st.markdown("### 📋 Quick Guide")
+    st.markdown("### 📋 Understanding the Output")
     st.markdown("""
-    **How to use:**
-    1. Click a button to load a brain signal recording
-    2. See what the computer guessed
-    3. Check if it was right!
-    4. Look at the brain activity map to see what the computer "saw"
+    **Computer's Guess:** What the AI thinks the person was imagining (LEFT or RIGHT)
     
-    **Tips:**
-    - Try loading multiple trials to see how accurate the computer is
-    - Higher "How Sure?" percentage = computer is more confident
-    - Green circle = correct guess, Red circle = wrong guess
+    **Confidence Level:** How sure the computer is (0-100%). Higher = more confident.
+    
+    **What Actually Happened:** The correct answer - what the person was really thinking about.
+    
+    **Brain Activity Map:** Visual representation of brain activity. Red areas = more active, Blue = less active.
+    
+    **Green circle** = correct guess, **Red circle** = wrong guess
     """)
-    
-    st.markdown("### 🔧 Model Information")
-    if csp is not None:
-        st.markdown(f"**CSP Components:** {csp.n_components}")
-    if lda is not None:
-        st.markdown(f"**LDA Solver:** {lda.solver}")
