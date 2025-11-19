@@ -156,7 +156,7 @@ st.markdown("""
         between two songs by listening to them many times.
     </p>
     <p style="margin-bottom: 0;">
-        <strong>Step 3: Making a Guess</strong> - When you think about moving a hand, the computer looks at the patterns it learned 
+        <strong>Step 3: Making a Guess</strong> - The computer looks at raw brain data, compares it to the patterns it learned,
         and makes its best guess: "This looks like left hand thinking" or "This looks like right hand thinking." The more confident 
         it is, the higher the percentage you'll see.
     </p>
